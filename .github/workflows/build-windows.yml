@@ -1,13 +1,13 @@
-name: Build Joseph Pixel Dungeon for Android
+name: Build Joseph Pixel Dungeon for Windows
 
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
     timeout-minutes: 45
 
     steps:
@@ -21,13 +21,32 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Build Android APKs
-        run: ./gradlew :android:assembleDebug :android:assembleRelease --no-daemon
+      - name: Compile desktop application
+        shell: cmd
+        run: gradlew.bat :desktop:compileJava :desktop:jar --no-daemon
 
-      - name: Upload APKs
+      - name: Build Windows application image
+        shell: cmd
+        run: gradlew.bat :desktop:jpackageImage --no-daemon
+
+      - name: Build Windows installer (EXE)
+        shell: cmd
+        continue-on-error: true
+        run: gradlew.bat :desktop:jpackage --no-daemon
+
+      - name: Show generated files
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path desktop/build -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension -in '.exe','.msi','.jar' } |
+            Select-Object FullName,Length
+
+      - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: Joseph-Pixel-Dungeon-Android
-          path: android/build/outputs/apk/**/*.apk
+          name: Joseph-Pixel-Dungeon-Windows
+          path: |
+            desktop/build/jpackage/**
+            desktop/build/image/**
           if-no-files-found: error
           retention-days: 14
