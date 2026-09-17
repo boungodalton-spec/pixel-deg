@@ -15,14 +15,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
 
+      - name: Give Gradle wrapper execute permission
+        run: chmod +x gradlew
+
       - name: Build Android APKs
         run: ./gradlew :android:assembleDebug :android:assembleRelease --no-daemon
+
+      - name: Show generated APKs
+        run: |
+          echo "APK files generated:"
+          find android/build/outputs/apk -type f -name "*.apk" -print
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
